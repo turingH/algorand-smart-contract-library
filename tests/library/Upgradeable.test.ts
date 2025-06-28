@@ -4,7 +4,7 @@ import { getApplicationAddress } from "algosdk";
 import type { Account, Address } from "algosdk";
 
 import { LargeContractToUpgradeToFactory } from "../../specs/client/LargeContractToUpgradeTo.client.ts";
-import { MockUpgradeableClient, MockUpgradeableFactory } from "../../specs/client/MockUpgradeable.client.ts";
+import { SimpleUpgradeableClient, SimpleUpgradeableFactory } from "../../specs/client/SimpleUpgradeable.client.ts";
 import { getAddressRolesBoxKey, getRoleBoxKey } from "../utils/boxes.ts";
 import { getEventBytes, getRandomBytes, getRoleBytes } from "../utils/bytes.ts";
 import { PAGE_SIZE, calculateProgramSha256 } from "../utils/contract.ts";
@@ -19,8 +19,8 @@ describe("Upgradeable", () => {
 
   const MIN_UPGRADE_DELAY = SECONDS_IN_DAY;
 
-  let factory: MockUpgradeableFactory;
-  let client: MockUpgradeableClient;
+  let factory: SimpleUpgradeableFactory;
+  let client: SimpleUpgradeableClient;
   let appId: bigint;
 
   let updatedContractFactory: LargeContractToUpgradeToFactory;
@@ -39,7 +39,7 @@ describe("Upgradeable", () => {
     admin = await generateAccount({ initialFunds: (100).algo() });
     user = await generateAccount({ initialFunds: (100).algo() });
 
-    factory = algorand.client.getTypedAppFactory(MockUpgradeableFactory, {
+    factory = algorand.client.getTypedAppFactory(SimpleUpgradeableFactory, {
       defaultSender: creator,
       defaultSigner: creator.signer,
     });
@@ -80,9 +80,10 @@ describe("Upgradeable", () => {
       delay_1: MIN_UPGRADE_DELAY,
       timestamp: 0n,
     });
+    expect(await client.getActiveMinUpgradeDelay()).toEqual(MIN_UPGRADE_DELAY);
     expect(await client.state.global.scheduledContractUpgrade()).toBeUndefined();
     expect(await client.state.global.version()).toEqual(1n);
-    expect(await client.getActiveMinUpgradeDelay()).toEqual(MIN_UPGRADE_DELAY);
+
     expect(Uint8Array.from(await client.defaultAdminRole())).toEqual(DEFAULT_ADMIN_ROLE);
     expect(Uint8Array.from(await client.getRoleAdmin({ args: [DEFAULT_ADMIN_ROLE] }))).toEqual(DEFAULT_ADMIN_ROLE);
     expect(Uint8Array.from(await client.upgradableAdminRole())).toEqual(UPGRADEABLE_ADMIN_ROLE);

@@ -1,11 +1,11 @@
-from abc import abstractmethod
+from abc import ABC, abstractmethod
 from algopy import subroutine
 from algopy.arc4 import abimethod
 
 from .interfaces.IInitialisable import IInitialisable
 
 
-class Initialisable(IInitialisable):
+class Initialisable(IInitialisable, ABC):
     """Contract that allows children to be initialised.
 
     There are two main use cases for this contract:
