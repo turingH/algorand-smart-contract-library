@@ -79,6 +79,32 @@ class RateLimiter(IRateLimiter):
         # ensure there is enough capacity
         return Bool(amount <= rate_limit_bucket.current_capacity)
 
+    @abimethod(readonly=True)
+    def get_rate_limit(self, bucket_id: Bytes32) -> UInt256:
+        """Returns the rate limit of the bucket
+
+        Args:
+            bucket_id: The bucket to get the rate limit of
+
+        Raises:
+            AssertionError: If the bucket is unknown.
+        """
+        self._check_bucket_known(bucket_id)
+        return self.rate_limit_buckets[bucket_id].limit
+
+    @abimethod(readonly=True)
+    def get_rate_duration(self, bucket_id: Bytes32) -> UInt64:
+        """Returns the rate duration of the bucket
+
+        Args:
+            bucket_id: The bucket to get the rate duration of
+
+        Raises:
+            AssertionError: If the bucket is unknown.
+        """
+        self._check_bucket_known(bucket_id)
+        return self.rate_limit_buckets[bucket_id].duration.native
+
     @subroutine
     def _add_bucket(self, bucket_id: Bytes32, limit: UInt256, duration: UInt64) -> None:
         """Creates a new bucket with the specified parameters.

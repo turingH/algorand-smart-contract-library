@@ -1,11 +1,11 @@
-from abc import abstractmethod
+from abc import ABC, abstractmethod
 from algopy import Global, Txn
 from algopy.arc4 import abimethod
 
 from ..Initialisable import Initialisable
 
 
-class InitialisableWithCreator(Initialisable):
+class InitialisableWithCreator(Initialisable, ABC):
     """Extension to Initialisable Contract which ensures caller of "initialise" method is contract creator."""
     def __init__(self) -> None:
         Initialisable.__init__(self)
@@ -23,4 +23,4 @@ class InitialisableWithCreator(Initialisable):
             AssertionError: If the contract is already initialised
         """
         assert Txn.sender == Global.creator_address, "Caller must be the contract creator"
-        super().initialise()
+        Initialisable.initialise(self)

@@ -47,6 +47,14 @@ describe("RateLimiter", () => {
     await expect(client.send.getCurrentCapacity({ args: [bucketId] })).rejects.toThrow("Unknown bucket");
   });
 
+  test("get rate duration fails if bucket unknown", async () => {
+    await expect(client.send.getRateDuration({ args: [bucketId] })).rejects.toThrow("Unknown bucket");
+  });
+
+  test("get rate limit fails if bucket unknown", async () => {
+    await expect(client.send.getRateLimit({ args: [bucketId] })).rejects.toThrow("Unknown bucket");
+  });
+
   describe("add bucket", () => {
     test("succeeds", async () => {
       const prevBlockTimestamp = await getPrevBlockTimestamp(localnet);
@@ -74,6 +82,9 @@ describe("RateLimiter", () => {
       expect(await client.getCurrentCapacity({ args: [bucketId] })).toEqual(limit);
       const expectedBucket = { limit, currentCapacity: limit, duration, lastUpdated: prevBlockTimestamp };
       expect(await client.getBucket({ args: [bucketId] })).toEqual(expectedBucket);
+      expect(await client.getCurrentCapacity({ args: [bucketId] })).toEqual(expectedBucket.currentCapacity);
+      expect(await client.getRateLimit({ args: [bucketId] })).toEqual(expectedBucket.limit);
+      expect(await client.getRateDuration({ args: [bucketId] })).toEqual(expectedBucket.duration);
       const rateLimitBucket = await client.state.box.rateLimitBuckets.value(bucketId);
       expect(rateLimitBucket).toBeDefined();
       expect(rateLimitBucket).toEqual(expectedBucket);
@@ -211,6 +222,7 @@ describe("RateLimiter", () => {
       // should consider updated current capacity
       const limitDelta = limit - newLimit;
       expect(await client.getCurrentCapacity({ args: [bucketId] })).toEqual(oldCapacity - limitDelta);
+      expect(await client.getRateLimit({ args: [bucketId] })).toEqual(newLimit);
       const expectedBucket = {
         limit: newLimit,
         currentCapacity: oldCapacity - limitDelta,
@@ -242,6 +254,7 @@ describe("RateLimiter", () => {
       const limitDelta = limit - newLimit;
       expect(oldCapacity - limitDelta).toBeLessThan(0n);
       expect(await client.getCurrentCapacity({ args: [bucketId] })).toEqual(0n);
+      expect(await client.getRateLimit({ args: [bucketId] })).toEqual(newLimit);
       const expectedBucket = { limit: newLimit, currentCapacity: 0n, duration, lastUpdated: prevBlockTimestamp };
       expect(await client.getBucket({ args: [bucketId] })).toEqual(expectedBucket);
       const rateLimitBucket = await client.state.box.rateLimitBuckets.value(bucketId);
@@ -267,6 +280,7 @@ describe("RateLimiter", () => {
       // should consider updated current capacity
       const limitDelta = newLimit - limit;
       expect(await client.getCurrentCapacity({ args: [bucketId] })).toEqual(oldCapacity + limitDelta);
+      expect(await client.getRateLimit({ args: [bucketId] })).toEqual(newLimit);
       const expectedBucket = {
         limit: newLimit,
         currentCapacity: oldCapacity + limitDelta,
@@ -314,6 +328,7 @@ describe("RateLimiter", () => {
 
       // should consider updated current capacity
       expect(await client.getCurrentCapacity({ args: [bucketId] })).toEqual(capacity);
+      expect(await client.getRateDuration({ args: [bucketId] })).toEqual(newDuration);
       const expectedBucket = {
         limit,
         currentCapacity: capacity,

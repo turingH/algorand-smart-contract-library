@@ -1,6 +1,6 @@
-from abc import abstractmethod
+from abc import ABC
 from algopy import Bytes, Global, GlobalState, Txn, UInt64, op, subroutine, urange
-from algopy.arc4 import Address, Struct, abimethod, emit
+from algopy.arc4 import Struct, abimethod, emit
 
 from ..types import ARC4UInt64, Bytes16, Bytes32
 from .AccessControl import AccessControl
@@ -26,7 +26,7 @@ class MinimumUpgradeDelayChange(Struct):
     timestamp: ARC4UInt64
 
 
-class Upgradeable(IUpgradeable, AccessControl, Initialisable):
+class Upgradeable(IUpgradeable, AccessControl, Initialisable, ABC):
     """Contract module that allows children to implement scheduled upgrade mechanisms.
 
     A contract upgrade must be scheduled at least "min upgrade delay" time in the future. Changes to the "min upgrade
@@ -48,6 +48,10 @@ class Upgradeable(IUpgradeable, AccessControl, Initialisable):
             sha256(clear_program_page_1),
             …
         )
+
+    It is the responsibility of the child contract to grant the `{upgradable_admin_role}`. The `initialise()` ABI
+    method, which is left abstract, is the recommended place to do this. If the `{upgradable_admin_role}` is ungranted
+    then no account will be able to upgrade the contract.
     """
     def __init__(self) -> None:
         AccessControl.__init__(self)
@@ -59,21 +63,6 @@ class Upgradeable(IUpgradeable, AccessControl, Initialisable):
     @abimethod(create="require")
     def create(self, min_upgrade_delay: UInt64) -> None:
         self.min_upgrade_delay.value = MinimumUpgradeDelay(ARC4UInt64(0), ARC4UInt64(min_upgrade_delay), ARC4UInt64(0))
-
-    @abstractmethod
-    @abimethod
-    def initialise(self, admin: Address) -> None: # type: ignore[override]
-        """Initialise the contract.
-        Override this method with additional args needed, calling super for common implementation.
-
-        IMPORTANT: make sure to check the sender in the child contract.
-
-        Raises:
-            AssertionError: If the contract is already initialised
-        """
-        super().initialise()
-        self._grant_role(self.default_admin_role(), admin)
-        self._grant_role(self.upgradable_admin_role(), admin)
 
     @abimethod
     def update_min_upgrade_delay(self, min_upgrade_delay: UInt64, timestamp: UInt64) -> None:
