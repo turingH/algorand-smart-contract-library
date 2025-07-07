@@ -340,6 +340,42 @@ describe("RateLimiter", () => {
       expect(rateLimitBucket).toBeDefined();
       expect(rateLimitBucket).toEqual(expectedBucket);
     });
+
+    test("does not refresh last_updated when duration changes from zero", async () => {
+      const newBucketId = getRandomBytes(32);
+      const prevBlockTimestamp = await getPrevBlockTimestamp(localnet);
+      const APP_MIN_BALANCE = (154_900).microAlgos();
+      const fundingTxn = await localnet.algorand.createTransaction.payment({
+        sender: creator,
+        receiver: getApplicationAddress(appId),
+        amount: APP_MIN_BALANCE,
+      });
+      await client
+        .newGroup()
+        .addTransaction(fundingTxn)
+        .addBucket({
+          args: [newBucketId, limit, 0n],
+          boxReferences: [getBucketBoxKey(newBucketId)],
+        })
+        .send();
+
+      await advancePrevBlockTimestamp(localnet, duration / 4n);
+      const timestampBeforeUpdate = await getPrevBlockTimestamp(localnet);
+
+      await client.send.updateRateDuration({
+        args: [newBucketId, duration],
+        boxReferences: [getBucketBoxKey(newBucketId)],
+      });
+
+      const bucket = await client.getBucket({ args: [newBucketId] });
+      expect(bucket.lastUpdated).toEqual(prevBlockTimestamp);
+      expect(bucket.lastUpdated).not.toEqual(timestampBeforeUpdate);
+
+      await client.send.removeBucket({
+        args: [newBucketId],
+        boxReferences: [getBucketBoxKey(newBucketId)],
+      });
+    });
   });
 
   describe("has capacity", () => {
