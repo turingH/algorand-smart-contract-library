@@ -238,7 +238,13 @@ describe("RateLimiter - 边界情况测试", () => {
       const expectedRecovery = (limit - limit / 2n) / 4n; // 1/4 of the deficit
       const expectedCapacity = limit / 2n + expectedRecovery;
       
-      expect(capacityAfterWait).toBeCloseTo(Number(expectedCapacity), -15); // 允许小误差
+      // 对于 bigint 类型，我们使用范围比较而不是 toBeCloseTo
+      const tolerance = BigInt(10n ** 15n); // 允许的误差范围
+      const diff = capacityAfterWait > expectedCapacity 
+        ? capacityAfterWait - expectedCapacity 
+        : expectedCapacity - capacityAfterWait;
+      
+      expect(diff).toBeLessThanOrEqual(tolerance);
     });
   });
 }); 
