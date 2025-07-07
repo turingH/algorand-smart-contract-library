@@ -9,4 +9,5 @@ The following aspects of `contracts/library/RateLimiter.py` have been audited an
 5. The function contains logical guards such as early return on zero duration and capping capacity to `limit`.
 6. All entry points that call `_update_capacity()` first verify bucket existence through `_get_bucket()`.
 7. No numeric overflow vulnerabilities were found under current implementation and type guarantees.
+8. A bucket with duration `0` effectively has infinite capacity. When its duration is later updated to a non-zero value, `_update_capacity()` clamps `current_capacity` to the bucket's `limit`. The `last_updated` timestamp may remain unchanged, but this has no effect on capacity calculations because `current_capacity` cannot exceed `limit`.
 
