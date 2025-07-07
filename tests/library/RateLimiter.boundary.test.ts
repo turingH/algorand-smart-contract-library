@@ -67,12 +67,14 @@ describe("RateLimiter - 边界情况测试", () => {
 
       // 3. 更新持续时间为非零值
       const newDuration = SECONDS_IN_DAY / 2n;
-      const updateTimestamp = await getPrevBlockTimestamp(localnet);
       
       const updateResult = await client.send.updateRateDuration({ 
         args: [testBucketId, newDuration],
         boxReferences: [getBucketBoxKey(testBucketId)],
       });
+
+      // 获取交易确认后的实际时间戳
+      const updateTimestamp = await getPrevBlockTimestamp(localnet);
 
       // 验证事件被正确发出
       expect(updateResult.confirmations[0].logs).toBeDefined();
@@ -126,37 +128,37 @@ describe("RateLimiter - 边界情况测试", () => {
 
       // 第一次更新：从0到非零
       await advancePrevBlockTimestamp(localnet, SECONDS_IN_DAY);
-      const firstUpdateTimestamp = await getPrevBlockTimestamp(localnet);
       
       await client.send.updateRateDuration({ 
         args: [secondBucketId, SECONDS_IN_DAY],
         boxReferences: [getBucketBoxKey(secondBucketId)],
       });
 
+      const firstUpdateTimestamp = await getPrevBlockTimestamp(localnet);
       let bucket = await client.getBucket({ args: [secondBucketId] });
       expect(bucket.lastUpdated).toEqual(firstUpdateTimestamp);
 
       // 第二次更新：从非零到另一个非零值
       await advancePrevBlockTimestamp(localnet, SECONDS_IN_DAY / 2n);
-      const secondUpdateTimestamp = await getPrevBlockTimestamp(localnet);
       
       await client.send.updateRateDuration({ 
         args: [secondBucketId, SECONDS_IN_DAY * 2n],
         boxReferences: [getBucketBoxKey(secondBucketId)],
       });
 
+      const secondUpdateTimestamp = await getPrevBlockTimestamp(localnet);
       bucket = await client.getBucket({ args: [secondBucketId] });
       expect(bucket.lastUpdated).toEqual(secondUpdateTimestamp);
 
       // 第三次更新：从非零回到0
       await advancePrevBlockTimestamp(localnet, SECONDS_IN_DAY / 4n);
-      const thirdUpdateTimestamp = await getPrevBlockTimestamp(localnet);
       
       await client.send.updateRateDuration({ 
         args: [secondBucketId, 0n],
         boxReferences: [getBucketBoxKey(secondBucketId)],
       });
 
+      const thirdUpdateTimestamp = await getPrevBlockTimestamp(localnet);
       bucket = await client.getBucket({ args: [secondBucketId] });
       expect(bucket.duration).toEqual(0n);
       expect(bucket.lastUpdated).toEqual(thirdUpdateTimestamp);
@@ -193,12 +195,12 @@ describe("RateLimiter - 边界情况测试", () => {
       expect(capacityBeforeUpdate).toEqual(limit / 2n);
 
       // 更新为有限桶
-      const updateTimestamp = await getPrevBlockTimestamp(localnet);
       await client.send.updateRateDuration({ 
         args: [thirdBucketId, SECONDS_IN_DAY],
         boxReferences: [getBucketBoxKey(thirdBucketId)],
       });
 
+      const updateTimestamp = await getPrevBlockTimestamp(localnet);
       // 验证 last_updated 被正确设置
       const bucket = await client.getBucket({ args: [thirdBucketId] });
       expect(bucket.lastUpdated).toEqual(updateTimestamp);

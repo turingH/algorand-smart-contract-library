@@ -2,12 +2,12 @@ import { type ABIStruct, getABIEncodedValue } from "@algorandfoundation/algokit-
 import { sha512_256 } from "@noble/hashes/sha2";
 import { keccak_256 } from "@noble/hashes/sha3";
 import { type ABIValue } from "algosdk";
-
+import { webcrypto } from "crypto";
 export const enc = new TextEncoder();
 
 export function getRandomBytes(length: number): Uint8Array {
-  //return webcrypto.getRandomValues(new Uint8Array(length));
-  return crypto.getRandomValues(new Uint8Array(length));
+  return webcrypto.getRandomValues(new Uint8Array(length));
+  //return crypto.getRandomValues(new Uint8Array(length));
 }
 
 export function convertNumberToBytes(num: number | bigint, length: number): Uint8Array {
