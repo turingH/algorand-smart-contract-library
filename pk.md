@@ -1,4 +1,4 @@
-# Verified Knowledge - RateLimiter Overflow Analysis
+# Verified Knowledge - RateLimiter 
 
 The following aspects of `contracts/library/RateLimiter.py` have been audited and confirmed as safe. Future audit plans can skip re-validating these points unless code changes are introduced.
 
