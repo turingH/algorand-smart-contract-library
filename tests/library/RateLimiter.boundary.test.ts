@@ -73,8 +73,11 @@ describe("RateLimiter - 边界情况测试", () => {
         boxReferences: [getBucketBoxKey(testBucketId)],
       });
 
-      // 获取交易确认后的实际时间戳
-      const updateTimestamp = await getPrevBlockTimestamp(localnet);
+      // 获取交易确认后的实际时间戳 - 使用包含该交易的区块时间戳
+      const { confirmedRound } = updateResult.confirmations[0];
+      if (!confirmedRound) throw Error("Unknown confirmed round");
+      const { block } = await localnet.algorand.client.algod.block(confirmedRound).do();
+      const updateTimestamp = BigInt(block.header.timestamp);
 
       // 验证事件被正确发出
       expect(updateResult.confirmations[0].logs).toBeDefined();
@@ -129,36 +132,51 @@ describe("RateLimiter - 边界情况测试", () => {
       // 第一次更新：从0到非零
       await advancePrevBlockTimestamp(localnet, SECONDS_IN_DAY);
       
-      await client.send.updateRateDuration({ 
+      const firstUpdateResult = await client.send.updateRateDuration({ 
         args: [secondBucketId, SECONDS_IN_DAY],
         boxReferences: [getBucketBoxKey(secondBucketId)],
       });
 
-      const firstUpdateTimestamp = await getPrevBlockTimestamp(localnet);
+      // 获取第一次更新的实际时间戳
+      const { confirmedRound: firstConfirmedRound } = firstUpdateResult.confirmations[0];
+      if (!firstConfirmedRound) throw Error("Unknown confirmed round");
+      const { block: firstBlock } = await localnet.algorand.client.algod.block(firstConfirmedRound).do();
+      const firstUpdateTimestamp = BigInt(firstBlock.header.timestamp);
+      
       let bucket = await client.getBucket({ args: [secondBucketId] });
       expect(bucket.lastUpdated).toEqual(firstUpdateTimestamp);
 
       // 第二次更新：从非零到另一个非零值
       await advancePrevBlockTimestamp(localnet, SECONDS_IN_DAY / 2n);
       
-      await client.send.updateRateDuration({ 
+      const secondUpdateResult = await client.send.updateRateDuration({ 
         args: [secondBucketId, SECONDS_IN_DAY * 2n],
         boxReferences: [getBucketBoxKey(secondBucketId)],
       });
 
-      const secondUpdateTimestamp = await getPrevBlockTimestamp(localnet);
+      // 获取第二次更新的实际时间戳
+      const { confirmedRound: secondConfirmedRound } = secondUpdateResult.confirmations[0];
+      if (!secondConfirmedRound) throw Error("Unknown confirmed round");
+      const { block: secondBlock } = await localnet.algorand.client.algod.block(secondConfirmedRound).do();
+      const secondUpdateTimestamp = BigInt(secondBlock.header.timestamp);
+      
       bucket = await client.getBucket({ args: [secondBucketId] });
       expect(bucket.lastUpdated).toEqual(secondUpdateTimestamp);
 
       // 第三次更新：从非零回到0
       await advancePrevBlockTimestamp(localnet, SECONDS_IN_DAY / 4n);
       
-      await client.send.updateRateDuration({ 
+      const thirdUpdateResult = await client.send.updateRateDuration({ 
         args: [secondBucketId, 0n],
         boxReferences: [getBucketBoxKey(secondBucketId)],
       });
 
-      const thirdUpdateTimestamp = await getPrevBlockTimestamp(localnet);
+      // 获取第三次更新的实际时间戳
+      const { confirmedRound: thirdConfirmedRound } = thirdUpdateResult.confirmations[0];
+      if (!thirdConfirmedRound) throw Error("Unknown confirmed round");
+      const { block: thirdBlock } = await localnet.algorand.client.algod.block(thirdConfirmedRound).do();
+      const thirdUpdateTimestamp = BigInt(thirdBlock.header.timestamp);
+      
       bucket = await client.getBucket({ args: [secondBucketId] });
       expect(bucket.duration).toEqual(0n);
       expect(bucket.lastUpdated).toEqual(thirdUpdateTimestamp);
@@ -195,12 +213,17 @@ describe("RateLimiter - 边界情况测试", () => {
       expect(capacityBeforeUpdate).toEqual(limit / 2n);
 
       // 更新为有限桶
-      await client.send.updateRateDuration({ 
+      const updateResult = await client.send.updateRateDuration({ 
         args: [thirdBucketId, SECONDS_IN_DAY],
         boxReferences: [getBucketBoxKey(thirdBucketId)],
       });
 
-      const updateTimestamp = await getPrevBlockTimestamp(localnet);
+      // 获取更新交易的实际时间戳
+      const { confirmedRound } = updateResult.confirmations[0];
+      if (!confirmedRound) throw Error("Unknown confirmed round");
+      const { block } = await localnet.algorand.client.algod.block(confirmedRound).do();
+      const updateTimestamp = BigInt(block.header.timestamp);
+      
       // 验证 last_updated 被正确设置
       const bucket = await client.getBucket({ args: [thirdBucketId] });
       expect(bucket.lastUpdated).toEqual(updateTimestamp);
