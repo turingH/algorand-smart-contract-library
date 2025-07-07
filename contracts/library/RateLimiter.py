@@ -184,14 +184,7 @@ class RateLimiter(IRateLimiter):
             AssertionError: If the bucket is unknown.
         """
         # fails if bucket is unknown
-        rate_limit_bucket = self._get_bucket(bucket_id)
-        old_duration = rate_limit_bucket.duration.native
-        
         self._update_capacity(bucket_id)
-
-        # 如果旧持续时间为0且新持续时间非零，需要更新last_updated
-        if not old_duration and new_duration:
-            self.rate_limit_buckets[bucket_id].last_updated = ARC4UInt64(Global.latest_timestamp)
 
         # update duration
         self.rate_limit_buckets[bucket_id].duration = ARC4UInt64(new_duration)
