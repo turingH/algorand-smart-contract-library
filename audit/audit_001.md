@@ -21,26 +21,25 @@
 
 - 2025-07-25: audit_001_022_plan_report.md 未发现漏洞，方向被人工否定。新的研究方向转向 BoxMap 前缀冲突及跨合约状态隔离，计划文件为 audit_001_023_plan.md。
 - 2025-07-26: audit_001_023_plan_report.md 指出 BoxMap 前缀隔离良好，旧数据会继续保留但不会被新逻辑读取，仅需在升级时手动处理，未发现直接漏洞，因此将该方向标记为人工否定。新的研究方向转向升级流程中可能发生的版本回滚或重复升级风险，计划文件为 audit_001_024_plan.md。
+- 2025-07-27: audit_001_024_plan_report.md 发现升级可回滚到旧程序，虽未构成直接漏洞，但属治理风险，故标记为潜在风险。新的研究方向转向升级过程中的全局/局部状态 schema 兼容性，计划文件为 audit_001_025_plan.md。
 ## 背景
-`audit_001_019_plan_report.md` 显示 `InitialisableWithCreator` 权限检查充分，未发现漏洞。随后 `audit_001_020_plan_report.md` 指出角色数据在升级后仍会保留，但仅构成管理隐患，并非直接漏洞。综合 `audit_plan_false_finding.md` 与 `audit_plan_no_finding.md`，旧思路再次被否定。此后 `audit_001_021_plan_report.md` 记录升级完成后旧状态不会被自动清理；`audit_001_022_plan_report.md` 验证预初始化阶段风险为误报；`audit_001_023_plan_report.md` 进一步确认 BoxMap 前缀隔离良好，旧数据仅需在升级时手动处理。故上述方向均被人工否定。本次关注 **升级流程是否允许版本回滚或重复升级**，若缺乏限制可能重新引入已修复漏洞。根据 `pk.md` 的先验知识，`RateLimiter` 的数值逻辑无需复查。
+`audit_001_019_plan_report.md` 显示 `InitialisableWithCreator` 权限检查充分，未发现漏洞。随后 `audit_001_020_plan_report.md` 指出角色数据在升级后仍会保留，但仅构成管理隐患，并非直接漏洞。综合 `audit_plan_false_finding.md` 与 `audit_plan_no_finding.md`，旧思路再次被否定。此后 `audit_001_021_plan_report.md` 记录升级完成后旧状态不会被自动清理；`audit_001_022_plan_report.md` 验证预初始化阶段风险为误报；`audit_001_023_plan_report.md` 进一步确认 BoxMap 前缀隔离良好，旧数据仅需在升级时手动处理；`audit_001_024_plan_report.md` 指出版本可回滚但属于治理风险。故上述方向均被人工否定。本次计划转向 **升级时全局/局部状态 schema 的兼容性**，以排查升级失败或状态损坏的可能。根据 `pk.md` 的先验知识，`RateLimiter` 的数值逻辑无需复查。
 
 ## 审计目标
-1. 确认 `schedule_contract_upgrade` 与 `complete_contract_upgrade` 是否限制版本号递增，避免降级或重复升级。
-2. 评估管理员能否通过提供旧合约的 `program_sha256` 将合约回滚到早期版本。
-3. 设计测试场景：尝试升级到相同或更旧的程序，观察版本号与功能表现。
-4. 根据审计结果提出版本管理或程序校验的改进建议。
-
+1. 确认 `Upgradeable` 在升级时是否校验新合约的 global/local state schema 与旧版本兼容。
+2. 调研若新版本 schema 变化（字段数量或类型调整），升级交易是否会失败或导致旧数据丢失。
+3. 设计测试场景：编译两个存在 schema 差异的合约版本，尝试升级并观察链上状态与错误信息。
+4. 根据审计结果提出迁移流程或合约校验机制的改进建议。
 ## 审计步骤
 1. **代码审查**
    - 阅读 `Upgradeable.schedule_contract_upgrade` 与 `complete_contract_upgrade` 的实现，查找关于版本号或程序哈希的校验逻辑。
-   - 搜索现有测试，看是否覆盖降级或重复升级情形。
+   - 查阅合约中定义的 `GlobalState` 与 `LocalState` 字段，记录字段数量和类型。
+   - 检查 `schedule_contract_upgrade` 与 `complete_contract_upgrade` 是否对 schema 变化有限制。
 2. **测试设计**
-   - 部署初始版本合约并记录 `version`。
-   - 尝试调度升级到同一份程序或更旧的程序，并执行 `complete_contract_upgrade`。
-   - 观察升级是否成功以及 `version` 的变化情况。
+   - 准备两个合约版本，第二个版本修改 global/local schema。
+   - 使用升级流程尝试从旧版本过渡到新版本，观察是否被拒绝或出现异常。
 3. **文档检查**
-   - 查阅 README 与 DeepWiki（如可访问），确认是否建议避免降级或记录已部署版本。
-
+   - 查阅 README 与 DeepWiki（如可访问），确认是否提供 schema 迁移或兼容性指引。
 ## 预期结果
-- 判断合约是否允许回滚到旧版本或重复部署相同程序。
-- 若不存在限制而造成潜在风险，提出版本管理或文档改进建议；若无问题，将该方向标记为“未发现漏洞”。
+- 评估升级时 schema 不兼容的错误表现及数据保留情况。
+- 若发现风险，提出迁移脚本或限制策略；若无问题，将该方向标记为“未发现漏洞”。
