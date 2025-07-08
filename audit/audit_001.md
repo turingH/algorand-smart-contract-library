@@ -1,6 +1,8 @@
 # AI 审计方案 - 更改持续时间的边界情况
 ## 更新历史
 - 2025-07-08: 基于 @audit_001_report_change_01.md、@audit_001_report.md、@audit_001_006_plan_report.md 等误报确认文件，本方案被人工否定，不再继续深挖。新审计方向详见 audit_001_010_plan.md。
+- 2025-07-09: 结合 @audit_001_access_control_plan_report.md 与 @audit_001_006_plan_report.md 的结果，确认旧方向均为误报。本方案再次停止，新的研究方向转向 UInt64SetLib 边界条件，详见 audit_001_011_plan.md。
+- 2025-07-10: audit_001_010_plan_report.md 未发现漏洞，确认此前假设不成立。
 
 ## 背景
 - `RateLimiter._update_rate_duration` 在修改桶的持续时间之前，会先调用一次 `_update_capacity`。
