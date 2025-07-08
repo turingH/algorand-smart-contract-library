@@ -20,25 +20,27 @@
 
 
 - 2025-07-25: audit_001_022_plan_report.md 未发现漏洞，方向被人工否定。新的研究方向转向 BoxMap 前缀冲突及跨合约状态隔离，计划文件为 audit_001_023_plan.md。
+- 2025-07-26: audit_001_023_plan_report.md 指出 BoxMap 前缀隔离良好，旧数据会继续保留但不会被新逻辑读取，仅需在升级时手动处理，未发现直接漏洞，因此将该方向标记为人工否定。新的研究方向转向升级流程中可能发生的版本回滚或重复升级风险，计划文件为 audit_001_024_plan.md。
 ## 背景
-`audit_001_019_plan_report.md` 显示 `InitialisableWithCreator` 权限检查充分，未发现漏洞。随后 `audit_001_020_plan_report.md` 指出角色数据在升级后仍会保留，但仅构成管理隐患，并非直接漏洞。综合 `audit_plan_false_finding.md` 与 `audit_plan_no_finding.md`，旧思路再次被否定。之后 `audit_001_021_plan_report.md` 记录升级完成后旧状态不会被自动清理，但目前结论仍在人工确认中。为继续探索潜在风险，新的关注点转向 **升级后可能遗留的其他 Box/全局状态** 是否需要清理，并进一步评估升级完成到重新初始化之间的权限过渡问题。根据 `pk.md` 的先验知识，`RateLimiter` 的数值逻辑无需复查。
+`audit_001_019_plan_report.md` 显示 `InitialisableWithCreator` 权限检查充分，未发现漏洞。随后 `audit_001_020_plan_report.md` 指出角色数据在升级后仍会保留，但仅构成管理隐患，并非直接漏洞。综合 `audit_plan_false_finding.md` 与 `audit_plan_no_finding.md`，旧思路再次被否定。此后 `audit_001_021_plan_report.md` 记录升级完成后旧状态不会被自动清理；`audit_001_022_plan_report.md` 验证预初始化阶段风险为误报；`audit_001_023_plan_report.md` 进一步确认 BoxMap 前缀隔离良好，旧数据仅需在升级时手动处理。故上述方向均被人工否定。本次关注 **升级流程是否允许版本回滚或重复升级**，若缺乏限制可能重新引入已修复漏洞。根据 `pk.md` 的先验知识，`RateLimiter` 的数值逻辑无需复查。
 
 ## 审计目标
-1. 识别在 `complete_contract_upgrade` 与 `initialise` 之间可被调用的 ABI 方法及其权限要求。
-2. 分析旧角色在此阶段是否可能修改或授予新角色，从而影响新版本的安全初始化。
-3. 设计测试场景：升级后暂不初始化，尝试调用 `grant_role` 等接口并观察行为。
-4. 根据审计结果提出在升级后立即初始化或限制调用的最佳实践。
+1. 确认 `schedule_contract_upgrade` 与 `complete_contract_upgrade` 是否限制版本号递增，避免降级或重复升级。
+2. 评估管理员能否通过提供旧合约的 `program_sha256` 将合约回滚到早期版本。
+3. 设计测试场景：尝试升级到相同或更旧的程序，观察版本号与功能表现。
+4. 根据审计结果提出版本管理或程序校验的改进建议。
 
 ## 审计步骤
 1. **代码审查**
-   - 搜索所有未调用 `_only_initialised` 的 ABI 方法，评估在未初始化状态下的可用性。
-   - 关注 `AccessControl` 方法及其他可能修改状态的接口。
+   - 阅读 `Upgradeable.schedule_contract_upgrade` 与 `complete_contract_upgrade` 的实现，查找关于版本号或程序哈希的校验逻辑。
+   - 搜索现有测试，看是否覆盖降级或重复升级情形。
 2. **测试设计**
-   - 部署旧版本合约并授予多个角色，完成升级后暂不调用 `initialise`。
-   - 尝试调用 `grant_role`、`schedule_contract_upgrade` 等方法，观察是否受限。
+   - 部署初始版本合约并记录 `version`。
+   - 尝试调度升级到同一份程序或更旧的程序，并执行 `complete_contract_upgrade`。
+   - 观察升级是否成功以及 `version` 的变化情况。
 3. **文档检查**
-   - 查阅 README 与 DeepWiki（如可访问），确认是否提醒升级后应尽快重新初始化并限制调用。
+   - 查阅 README 与 DeepWiki（如可访问），确认是否建议避免降级或记录已部署版本。
 
 ## 预期结果
-- 评估升级完成到初始化之前的窗口是否存在权限滥用或状态篡改风险。
-- 若无明显问题，则将该方向标记为“未发现漏洞”；若发现风险，提出限制调用或文档改进建议。
+- 判断合约是否允许回滚到旧版本或重复部署相同程序。
+- 若不存在限制而造成潜在风险，提出版本管理或文档改进建议；若无问题，将该方向标记为“未发现漏洞”。
