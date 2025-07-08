@@ -1,6 +1,7 @@
 import { algorandFixture } from "@algorandfoundation/algokit-utils/testing";
 import type { TransactionSignerAccount } from "@algorandfoundation/algokit-utils/types/account";
 import type { Account, Address } from "algosdk";
+import { getApplicationAddress } from "algosdk";
 
 import { MockAccessControlClient, MockAccessControlFactory } from "../../specs/client/MockAccessControl.client.ts";
 import { getAddressRolesBoxKey, getRoleBoxKey } from "../utils/boxes.ts";
@@ -36,6 +37,14 @@ describe("AccessControl cyclic admin", () => {
     const { appClient, result } = await factory.deploy();
     appId = result.appId;
     client = appClient;
+
+    // fund the application account so it has enough minimum balance for box creation
+    const APP_MIN_BALANCE = (200_000).microAlgos();
+    await localnet.algorand.send.payment({
+      sender: creator,
+      receiver: getApplicationAddress(appId),
+      amount: APP_MIN_BALANCE,
+    });
 
     // set admins without assigning any default admin role
     await client.send.setRoleAdmin({
