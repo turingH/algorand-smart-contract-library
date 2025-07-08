@@ -26,9 +26,10 @@
 - 2025-07-29: 参考 audit_plan_false_finding.md 等文件，确认近期方向多为误报或治理风险，audit_001_026_plan.md 正等待人工验证。为继续探索新漏洞，决定研究 Upgradeable.version 的 UInt64 溢出可能性，计划文件为 audit_001_027_plan.md。
 - 2025-07-30: audit_001_027_plan_report.md 未发现漏洞，確認版本溢出僅屬理論風險，方向標記為人工否定。為探索新切入點，決定研究升級程序頁數過大導致循環耗盡的可能性，計劃文件為 audit_001_028_plan.md。
 - 2025-07-31: audit_001_028_plan_report.md 未发现漏洞，方向被人工否定。新的研究方向关注 default_admin_role 与自定义角色冲突的潜在风险，计划文件为 audit_001_029_plan.md。
+- 2025-08-01: audit_001_029_plan_report.md 未发现漏洞，方向被人工否定。新的研究方向转向 BoxMap 条目数量上限与潜在 DoS，计划文件为 audit_001_030_plan.md。
 ## 背景
 `audit_001_019_plan_report.md` 显示 `InitialisableWithCreator` 权限检查充分，未发现漏洞。随后 `audit_001_020_plan_report.md` 指出角色数据在升级后仍会保留，但仅构成管理隐患，并非直接漏洞。综合 `audit_plan_false_finding.md` 与 `audit_plan_no_finding.md`，旧思路再次被否定。此后 `audit_001_021_plan_report.md` 记录升级完成后旧状态不会被自动清理；`audit_001_022_plan_report.md` 验证预初始化阶段风险为误报；`audit_001_023_plan_report.md` 进一步确认 BoxMap 前缀隔离良好，旧数据仅需在升级时手动处理；`audit_001_024_plan_report.md` 指出版本可回滚但属于治理风险；`audit_001_025_plan_report.md` 证实 schema 兼容性问题亦未构成漏洞，仅需文档补充。故上述方向均被人工否定。目前 `audit_001_026_plan.md` 针对角色管理员循环依赖的风险仍在等待人工验证。为了寻找新的切入点，本次进一步关注 `Upgradeable.version` 的溢出可能性，详见 audit_001_027_plan.md。根据 `pk.md` 的先验知识，`RateLimiter` 的数值逻辑无需复查。
-后续 `audit_001_027_plan_report.md` 指出版本号溢出难以在现实触发，故将该方向记为人工否定。为继续发现潜在风险，计划研究程序页数过大可能导致循环耗尽的问题，详见 audit_001_028_plan.md。
+后续 `audit_001_027_plan_report.md` 指出版本号溢出难以在现实触发，故将该方向记为人工否定。随后 `audit_001_028_plan_report.md` 亦未发现漏洞，`default_admin_role` 冲突方向在 `audit_001_029_plan_report.md` 中同样被否定。鉴于近期思路多被证伪，计划转向评估 BoxMap 条目数量上限与潜在 DoS，详见 audit_001_030_plan.md。
 
 ## 审计目标
 1. 分析 `AccessControl` 是否允许设置角色管理员为另一个角色而导致循环依赖。
