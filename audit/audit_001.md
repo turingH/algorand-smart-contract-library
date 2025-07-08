@@ -19,6 +19,7 @@
 - 2025-07-24: audit_001_021_plan_report.md 指出升级后旧状态不会被自动清理，可能造成余额占用，目前结论等待人工验证。新的研究方向转向升级完成到重新初始化之间的权限过渡风险，计划文件为 audit_001_022_plan.md。
 
 
+- 2025-07-25: audit_001_022_plan_report.md 未发现漏洞，方向被人工否定。新的研究方向转向 BoxMap 前缀冲突及跨合约状态隔离，计划文件为 audit_001_023_plan.md。
 ## 背景
 `audit_001_019_plan_report.md` 显示 `InitialisableWithCreator` 权限检查充分，未发现漏洞。随后 `audit_001_020_plan_report.md` 指出角色数据在升级后仍会保留，但仅构成管理隐患，并非直接漏洞。综合 `audit_plan_false_finding.md` 与 `audit_plan_no_finding.md`，旧思路再次被否定。之后 `audit_001_021_plan_report.md` 记录升级完成后旧状态不会被自动清理，但目前结论仍在人工确认中。为继续探索潜在风险，新的关注点转向 **升级后可能遗留的其他 Box/全局状态** 是否需要清理，并进一步评估升级完成到重新初始化之间的权限过渡问题。根据 `pk.md` 的先验知识，`RateLimiter` 的数值逻辑无需复查。
 
