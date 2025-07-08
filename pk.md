@@ -11,3 +11,5 @@ The following aspects of `contracts/library/RateLimiter.py` have been audited an
 7. No numeric overflow vulnerabilities were found under current implementation and type guarantees.
 8. A bucket with duration `0` effectively has infinite capacity. When its duration is later updated to a non-zero value, `_update_capacity()` clamps `current_capacity` to the bucket's `limit`. The `last_updated` timestamp may remain unchanged, but this has no effect on capacity calculations because `current_capacity` cannot exceed `limit`.
 
+
+9. `RateLimiterExposed` in `contracts/library/test` exposes internal bucket-management methods only for unit testing and is not part of the production API. It should not be used as an example of a real deployment.
