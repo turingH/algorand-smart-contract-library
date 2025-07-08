@@ -23,8 +23,9 @@
 - 2025-07-26: audit_001_023_plan_report.md 指出 BoxMap 前缀隔离良好，旧数据会继续保留但不会被新逻辑读取，仅需在升级时手动处理，未发现直接漏洞，因此将该方向标记为人工否定。新的研究方向转向升级流程中可能发生的版本回滚或重复升级风险，计划文件为 audit_001_024_plan.md。
 - 2025-07-27: audit_001_024_plan_report.md 发现升级可回滚到旧程序，虽未构成直接漏洞，但属治理风险，故标记为潜在风险。新的研究方向转向升级过程中的全局/局部状态 schema 兼容性，计划文件为 audit_001_025_plan.md。
 - 2025-07-28: audit_001_025_plan_report.md 未发现漏洞，方向被人工否定。依据 @audit_plan_false_finding.md 等汇总，决定进一步研究 AccessControl 角色管理员循环依赖可能导致的权限锁定问题，计划文件为 audit_001_026_plan.md。
+- 2025-07-29: 参考 audit_plan_false_finding.md 等文件，确认近期方向多为误报或治理风险，audit_001_026_plan.md 正等待人工验证。为继续探索新漏洞，决定研究 Upgradeable.version 的 UInt64 溢出可能性，计划文件为 audit_001_027_plan.md。
 ## 背景
-`audit_001_019_plan_report.md` 显示 `InitialisableWithCreator` 权限检查充分，未发现漏洞。随后 `audit_001_020_plan_report.md` 指出角色数据在升级后仍会保留，但仅构成管理隐患，并非直接漏洞。综合 `audit_plan_false_finding.md` 与 `audit_plan_no_finding.md`，旧思路再次被否定。此后 `audit_001_021_plan_report.md` 记录升级完成后旧状态不会被自动清理；`audit_001_022_plan_report.md` 验证预初始化阶段风险为误报；`audit_001_023_plan_report.md` 进一步确认 BoxMap 前缀隔离良好，旧数据仅需在升级时手动处理；`audit_001_024_plan_report.md` 指出版本可回滚但属于治理风险；`audit_001_025_plan_report.md` 证实 schema 兼容性问题亦未构成漏洞，仅需文档补充。故上述方向均被人工否定。本次计划转向 **AccessControl 角色管理员循环依赖风险**，以评估可能的权限锁定场景。根据 `pk.md` 的先验知识，`RateLimiter` 的数值逻辑无需复查。
+`audit_001_019_plan_report.md` 显示 `InitialisableWithCreator` 权限检查充分，未发现漏洞。随后 `audit_001_020_plan_report.md` 指出角色数据在升级后仍会保留，但仅构成管理隐患，并非直接漏洞。综合 `audit_plan_false_finding.md` 与 `audit_plan_no_finding.md`，旧思路再次被否定。此后 `audit_001_021_plan_report.md` 记录升级完成后旧状态不会被自动清理；`audit_001_022_plan_report.md` 验证预初始化阶段风险为误报；`audit_001_023_plan_report.md` 进一步确认 BoxMap 前缀隔离良好，旧数据仅需在升级时手动处理；`audit_001_024_plan_report.md` 指出版本可回滚但属于治理风险；`audit_001_025_plan_report.md` 证实 schema 兼容性问题亦未构成漏洞，仅需文档补充。故上述方向均被人工否定。目前 `audit_001_026_plan.md` 针对角色管理员循环依赖的风险仍在等待人工验证。为了寻找新的切入点，本次进一步关注 `Upgradeable.version` 的溢出可能性，详见 audit_001_027_plan.md。根据 `pk.md` 的先验知识，`RateLimiter` 的数值逻辑无需复查。
 
 ## 审计目标
 1. 分析 `AccessControl` 是否允许设置角色管理员为另一个角色而导致循环依赖。
