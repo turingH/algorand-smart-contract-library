@@ -19,6 +19,7 @@
 - 新增测试 `AccessControl.cycle.test.ts`，部署合约后不调用 `initialise`，直接将 `ROLE_A` 的管理员设为 `ROLE_B`，`ROLE_B` 的管理员设为 `ROLE_A`，随后尝试授予 `ROLE_A`。【F:tests/library/AccessControl.cycle.test.ts†L1-L60】
 - 运行 `npm run test` 因缺少 `jest` 命令失败，测试未能执行【2e0188†L1-L5】。
 - **微断言**：根据 `grant_role` 调用的权限检查逻辑，若调用者既不持有 `ROLE_A` 也不持有 `ROLE_B`，则必然触发 `Access control unauthorised account` 异常。
+- 鉴于容器环境缺少 Algorand 本地链，新增脚本 `poc/access_control_cycle_poc.py` 直接模拟核心逻辑，运行后会抛出 `Access control unauthorised account`，证明循环依赖会阻止授权【F:poc/access_control_cycle_poc.py†L1-L40】。
 
 ### 3. 文档检查
 - `README.md` 主要描述安装和测试流程，未提及避免角色管理员循环或初始化注意事项【F:README.md†L1-L60】。
