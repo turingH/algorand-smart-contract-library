@@ -13,26 +13,27 @@
 - 2025-07-18: audit_001_016_plan_report.md 未发现漏洞，方向被人工否定。新的研究方向转向升级完成后初始化流程可能被抢占，计划文件为 audit_001_017_plan.md。
 - 2025-07-19: audit_001_017_plan_report.md 未发现漏洞，方向被人工否定。新的研究方向转向升级调度覆盖导致等待期被缩短的可能性，计划文件为 audit_001_018_plan.md。
 - 2025-07-20: audit_001_018_plan_report.md 未发现漏洞，方向被人工否定。参考 @audit_plan_false_finding.md 与 @audit_plan_no_finding.md，总结以往思路均未能挖掘实际问题，新的研究方向转向 `InitialisableWithCreator` 初始化权限，计划文件为 audit_001_019_plan.md。
+- 2025-07-21: audit_001_019_plan_report.md 未发现漏洞，方向被人工否定。新的研究方向转向升级过程中 AccessControl 角色持久化及潜在权限滥用，计划文件为 audit_001_020_plan.md。
 
 
 ## 背景
-`audit_001_018_plan_report.md` 进一步确认升级调度覆盖与延迟调整不存在漏洞，结合 `audit_plan_false_finding.md` 与 `audit_plan_no_finding.md` 中的结论，现有思路均已被人工否定。为寻找新的审计切入点，决定关注 **InitialisableWithCreator 扩展的初始化权限** 是否足够严格。根据 `pk.md` 的先验知识，`RateLimiter` 的数值逻辑无需复查。
+`audit_001_019_plan_report.md` 显示 `InitialisableWithCreator` 权限检查充分，未发现漏洞。结合 `audit_plan_false_finding.md` 与 `audit_plan_no_finding.md` 的结论，旧思路已被人工否定。为继续探索潜在风险，决定关注 **Upgradeable 升级过程中 AccessControl 角色持久化** 是否可能导致权限滥用。根据 `pk.md` 的先验知识，`RateLimiter` 的数值逻辑无需复查。
 
 ## 审计目标
-1. 审查 `InitialisableWithCreator.initialise` 对 `Global.creator_address` 的校验逻辑，确认无法被绕过。
-2. 评估在 Upgradeable 合约升级后，若新版本仍继承该扩展，是否可能利用旧状态或角色误用初始化入口。
-3. 设计测试场景验证仅合约创建者可以在任何阶段调用 `initialise`，并检查升级后是否仍受限制。
-4. 根据结果给出文档或代码层面的改进建议。
+1. 确认 `complete_contract_upgrade` 升级后原有角色数据仍被保留且不会自动清空。
+2. 评估新版本修改或删除角色定义时，旧角色是否依旧拥有超出预期的权限。
+3. 设计测试场景：升级到权限架构不同的合约，验证旧角色能否调用受保护接口。
+4. 根据结论给出文档或代码层面的改进建议。
 
 ## 审计步骤
 1. **代码审查**
-   - 阅读 `InitialisableWithCreator` 与 `Initialisable` 的实现，确认 `initialise` 前置条件。
-   - 检查继承该扩展的示例合约或测试合约，确保未绕过权限检查。
+   - 阅读 `complete_contract_upgrade` 与 `AccessControl` 的实现，确认升级不会自动重置角色。
+   - 检查示例合约在升级到新版本时如何处理旧角色，评估潜在滥用情形。
 2. **测试设计**
-   - 构造场景：非创建者尝试调用 `initialise`，预期失败；升级合约后再次验证调用限制仍生效。
+   - 模拟升级到角色配置不同的新合约，尝试以旧角色调用受限方法，观察是否被允许。
 3. **文档检查**
-   - 查看 README 与 DeepWiki 是否提示使用该扩展时需要注意的初始化权限。
+   - 查看 README 与 DeepWiki（如可访问）是否提醒在升级后重新审视角色配置。
 
 ## 预期结果
-- 评估 `InitialisableWithCreator` 是否可靠地限制初始化仅由合约创建者执行。
+- 判断角色持久化在升级场景下是否会导致权限滥用风险。
 - 根据结论，将该方向标记为“未发现漏洞”或给出修复与文档建议。
