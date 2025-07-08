@@ -6,6 +6,8 @@
 - 2025-07-11: audit_001_011_plan_report.md 未发现漏洞，原方案被人工否定。
 - 2025-07-12: 新方向转向 Upgradeable 合约程序哈希校验，详见 audit_001_012_plan.md。
 - 2025-07-13: audit_001_012_plan_report.md 未发现漏洞，确认 Upgradeable 哈希校验方向为误报，标记为人工否定。新的研究方向转向升级时间戳溢出问题，详见 audit_001_013_plan.md。
+- 2025-07-14: audit_001_013_plan_report.md 未发现漏洞，再次确认前述假设均为误报。继续寻找新的研究方向。
+- 2025-07-15: 基于上述结论，决定审查 AccessControl 角色 ID 的 16 字节截断设计，以评估潜在碰撞风险，计划文件为 audit_001_014_plan.md。
 
 ## 背景
 - `RateLimiter._update_rate_duration` 在修改桶的持续时间之前，会先调用一次 `_update_capacity`。
