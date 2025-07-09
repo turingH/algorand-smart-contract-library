@@ -30,23 +30,23 @@
 - 2025-08-02: audit_001_030_plan_report.md 指出条目数量上限仅属治理风险，未见直接漏洞，故标记为潜在风险。新的研究方向关注默认管理员全部放弃后是否可恢复，计划文件为 audit_001_031_plan.md。
 - 2025-08-03: audit_001_031_plan_report.md 确认最后管理员放弃权限会导致合约无法管理，属治理风险。新的研究方向转向授予角色时资金不足的失败模式，计划文件为 audit_001_032_plan.md。
 - 2025-08-04: audit_001_032_plan_report.md 指出资金不足交易会完全回滚，但文档需说明最低余额，标记为潜在风险。新的研究方向转向 BoxMap 结构变更兼容性，计划文件为 audit_001_033_plan.md。
+- 2025-08-05: audit_001_033_plan_report.md 仅提示结构变更风险，无直接漏洞。为探索其他潜在问题，决定研究升级后 `upgradable_admin_role` 常量变更可能导致权限丢失，计划文件为 audit_001_034_plan.md。
 ## 背景
 `audit_001_019_plan_report.md` 显示 `InitialisableWithCreator` 权限检查充分，未发现漏洞。随后 `audit_001_020_plan_report.md` 指出角色数据在升级后仍会保留，但仅构成管理隐患，并非直接漏洞。综合 `audit_plan_false_finding.md` 与 `audit_plan_no_finding.md`，旧思路再次被否定。此后 `audit_001_021_plan_report.md` 记录升级完成后旧状态不会被自动清理；`audit_001_022_plan_report.md` 验证预初始化阶段风险为误报；`audit_001_023_plan_report.md` 进一步确认 BoxMap 前缀隔离良好，旧数据仅需在升级时手动处理；`audit_001_024_plan_report.md` 指出版本可回滚但属于治理风险；`audit_001_025_plan_report.md` 证实 schema 兼容性问题亦未构成漏洞，仅需文档补充。故上述方向均被人工否定。目前 `audit_001_026_plan.md` 针对角色管理员循环依赖的风险仍在等待人工验证。为了寻找新的切入点，本次进一步关注 `Upgradeable.version` 的溢出可能性，详见 audit_001_027_plan.md。根据 `pk.md` 的先验知识，`RateLimiter` 的数值逻辑无需复查。
-后续 `audit_001_027_plan_report.md` 指出版本号溢出难以在现实触发，故将该方向记为人工否定。随后 `audit_001_028_plan_report.md` 亦未发现漏洞，`default_admin_role` 冲突方向在 `audit_001_029_plan_report.md` 中同样被否定。鉴于近期思路多被证伪，计划转向评估 BoxMap 条目数量上限与潜在 DoS，详见 audit_001_030_plan.md。`audit_001_030_plan_report.md` 进一步确认条目创建需管理员权限，仅在接口外泄时才可能产生治理风险，故将该方向标记为潜在风险。为继续探索，新的研究主题是默认管理员全部放弃后的合约锁定问题，详见 audit_001_031_plan.md。随后 `audit_001_031_plan_report.md` 将该情形认定为治理风险；`audit_001_032_plan_report.md` 指出授予角色时资金不足会安全回滚，但需在文档中说明最低余额。综上仍未发现直接漏洞，故拟研究 BoxMap 结构变更兼容性，详见 audit_001_033_plan.md。
+后续 `audit_001_027_plan_report.md` 指出版本号溢出难以在现实触发，故将该方向记为人工否定。随后 `audit_001_028_plan_report.md` 亦未发现漏洞，`default_admin_role` 冲突方向在 `audit_001_029_plan_report.md` 中同样被否定。鉴于近期思路多被证伪，计划转向评估 BoxMap 条目数量上限与潜在 DoS，详见 audit_001_030_plan.md。`audit_001_030_plan_report.md` 进一步确认条目创建需管理员权限，仅在接口外泄时才可能产生治理风险，故将该方向标记为潜在风险。为继续探索，新的研究主题是默认管理员全部放弃后的合约锁定问题，详见 audit_001_031_plan.md。随后 `audit_001_031_plan_report.md` 将该情形认定为治理风险；`audit_001_032_plan_report.md` 指出授予角色时资金不足会安全回滚，但需在文档中说明最低余额。综上仍未发现直接漏洞，故拟研究 BoxMap 结构变更兼容性，详见 audit_001_033_plan.md。`audit_001_033_plan_report.md` 进一步确认该问题仅为潜在风险，因此计划继续探索升级时 `upgradable_admin_role` 常量变更造成的权限丢失风险，详见 audit_001_034_plan.md。
 
 ## 审计目标
-1. 评估在升级时保留原 `BoxMap` 前缀但更改数据结构，会否导致旧数据被新逻辑误读。
-2. 设计升级场景复现此问题，观察是否引发权限或功能异常。
-3. 核对 README 与 DeepWiki 是否提供 Box 数据迁移或版本兼容指引。
-4. 根据评估结果给出迁移或清理的最佳实践建议。
+1. 确认 `upgradable_admin_role` 常量在各版本间保持一致，或在变更时能顺利迁移权限。
+2. 构建升级到修改该常量的新版本的场景，验证旧角色是否失效以及是否可重新授予。
+3. 检查 README 与 DeepWiki 是否提醒开发者避免更换该常量或在升级前保留默认管理员。
 ## 审计步骤
 1. **代码审查**
-   - 搜索各模块 `BoxMap` 的结构定义，记录字段与前缀。
-   - 阅读 `complete_contract_upgrade` 等流程，确认是否存在结构校验或迁移逻辑。
+   - 阅读 `Upgradeable.upgradable_admin_role()` 的实现及角色存储逻辑。
+   - 搜索仓库判断是否有自定义常量或变更示例。
 2. **测试设计**
-   - 编写示例合约，先以旧结构写入数据，再升级到新结构并复用前缀，读取结果观察异常。
+   - 编写示例合约修改常量并执行升级，观察能否再次调度升级或授予新角色。
 3. **文档检查**
-   - 查阅 README 与 DeepWiki，确认是否给出 Box 结构变更的处理建议。
+   - 查阅 README 与 DeepWiki，确认是否有关于角色常量变更的警告或迁移流程。
 ## 预期结果
-- 若旧数据会被错误解析，应建议在升级时清理或迁移，并在文档中加以说明。
-- 若影响可忽略，可将本方向标记为治理层面的提示。
+- 若常量变更会导致升级能力丢失，应提出文档和流程补救措施。
+- 若影响有限，可将该方向标记为治理风险并给出最佳实践。
