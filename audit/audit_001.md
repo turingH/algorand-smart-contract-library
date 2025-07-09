@@ -32,22 +32,22 @@
 - 2025-08-04: audit_001_032_plan_report.md 指出资金不足交易会完全回滚，但文档需说明最低余额，标记为潜在风险。新的研究方向转向 BoxMap 结构变更兼容性，计划文件为 audit_001_033_plan.md。
 - 2025-08-05: audit_001_033_plan_report.md 仅提示结构变更风险，无直接漏洞。为探索其他潜在问题，决定研究升级后 `upgradable_admin_role` 常量变更可能导致权限丢失，计划文件为 audit_001_034_plan.md。
 - 2025-08-06: audit_001_034_plan_report.md 认定常量变更仅属治理风险。新的研究方向转向检查未显式声明 `GlobalState` 的字段是否会持久化，计划文件为 audit_001_035_plan.md。
+- 2025-08-07: 鉴于 `audit_001_011_plan_report.md` 仅验证集合在 511 项上限内的表现，仍需确认超过上限时的安全性，新的研究方向转向 `UInt64SetLib` 长度溢出检查，计划文件为 audit_001_036_plan.md。
 ## 背景
 `audit_001_019_plan_report.md` 显示 `InitialisableWithCreator` 权限检查充分，未发现漏洞。随后 `audit_001_020_plan_report.md` 指出角色数据在升级后仍会保留，但仅构成管理隐患，并非直接漏洞。综合 `audit_plan_false_finding.md` 与 `audit_plan_no_finding.md`，旧思路再次被否定。此后 `audit_001_021_plan_report.md` 记录升级完成后旧状态不会被自动清理；`audit_001_022_plan_report.md` 验证预初始化阶段风险为误报；`audit_001_023_plan_report.md` 进一步确认 BoxMap 前缀隔离良好，旧数据仅需在升级时手动处理；`audit_001_024_plan_report.md` 指出版本可回滚但属于治理风险；`audit_001_025_plan_report.md` 证实 schema 兼容性问题亦未构成漏洞，仅需文档补充。故上述方向均被人工否定。目前 `audit_001_026_plan.md` 针对角色管理员循环依赖的风险仍在等待人工验证。为了寻找新的切入点，本次进一步关注 `Upgradeable.version` 的溢出可能性，详见 audit_001_027_plan.md。根据 `pk.md` 的先验知识，`RateLimiter` 的数值逻辑无需复查。
-后续 `audit_001_027_plan_report.md` 指出版本号溢出难以在现实触发，故将该方向记为人工否定。随后 `audit_001_028_plan_report.md` 亦未发现漏洞，`default_admin_role` 冲突方向在 `audit_001_029_plan_report.md` 中同样被否定。鉴于近期思路多被证伪，计划转向评估 BoxMap 条目数量上限与潜在 DoS，详见 audit_001_030_plan.md。`audit_001_030_plan_report.md` 进一步确认条目创建需管理员权限，仅在接口外泄时才可能产生治理风险，故将该方向标记为潜在风险。为继续探索，新的研究主题是默认管理员全部放弃后的合约锁定问题，详见 audit_001_031_plan.md。随后 `audit_001_031_plan_report.md` 将该情形认定为治理风险；`audit_001_032_plan_report.md` 指出授予角色时资金不足会安全回滚，但需在文档中说明最低余额。综上仍未发现直接漏洞，故拟研究 BoxMap 结构变更兼容性，详见 audit_001_033_plan.md。`audit_001_033_plan_report.md` 进一步确认该问题仅为潜在风险，因此计划继续探索升级时 `upgradable_admin_role` 常量变更造成的权限丢失风险，详见 audit_001_034_plan.md。
+后续 `audit_001_027_plan_report.md` 指出版本号溢出难以在现实触发，故将该方向记为人工否定。随后 `audit_001_028_plan_report.md` 亦未发现漏洞，`default_admin_role` 冲突方向在 `audit_001_029_plan_report.md` 中同样被否定。鉴于近期思路多被证伪，计划转向评估 BoxMap 条目数量上限与潜在 DoS，详见 audit_001_030_plan.md。`audit_001_030_plan_report.md` 进一步确认条目创建需管理员权限，仅在接口外泄时才可能产生治理风险，故将该方向标记为潜在风险。为继续探索，新的研究主题是默认管理员全部放弃后的合约锁定问题，详见 audit_001_031_plan.md。随后 `audit_001_031_plan_report.md` 将该情形认定为治理风险；`audit_001_032_plan_report.md` 指出授予角色时资金不足会安全回滚，但需在文档中说明最低余额。综上仍未发现直接漏洞，故拟研究 BoxMap 结构变更兼容性，详见 audit_001_033_plan.md。`audit_001_033_plan_report.md` 进一步确认该问题仅为潜在风险，因此计划继续探索升级时 `upgradable_admin_role` 常量变更造成的权限丢失风险，详见 audit_001_034_plan.md。随后 `audit_001_034_plan_report.md` 确认该问题仅为治理风险，故新方向转向 `audit_001_035_plan.md` 研究未显式声明 `GlobalState` 的字段持久化机制，并计划在 `audit_001_036_plan.md` 中检查 `UInt64SetLib` 超过 511 项时的溢出行为。
 
 ## 审计目标
-1. 确认 `upgradable_admin_role` 常量在各版本间保持一致，或在变更时能顺利迁移权限。
-2. 构建升级到修改该常量的新版本的场景，验证旧角色是否失效以及是否可重新授予。
-3. 检查 README 与 DeepWiki 是否提醒开发者避免更换该常量或在升级前保留默认管理员。
+1. 验证 `UInt64SetLib.add_item` 在集合已含 511 项时的行为，确认是否在编译或运行阶段报错。
+2. 评估出现异常时是否应在库层添加显式长度检查。
+3. 检查 README 与 DeepWiki 是否提到集合最大长度及相关警告。
 ## 审计步骤
 1. **代码审查**
-   - 阅读 `Upgradeable.upgradable_admin_role()` 的实现及角色存储逻辑。
-   - 搜索仓库判断是否有自定义常量或变更示例。
+   - 阅读 `UInt64SetLib.add_item`、`remove_item` 等实现，关注对长度的处理。
 2. **测试设计**
-   - 编写示例合约修改常量并执行升级，观察能否再次调度升级或授予新角色。
+   - 在现有测试基础上尝试添加第 512 项，观察编译与执行结果。
 3. **文档检查**
-   - 查阅 README 与 DeepWiki，确认是否有关于角色常量变更的警告或迁移流程。
+   - 搜索 README 与 DeepWiki，确认是否提示集合长度上限。
 ## 预期结果
-- 若常量变更会导致升级能力丢失，应提出文档和流程补救措施。
-- 若影响有限，可将该方向标记为治理风险并给出最佳实践。
+- 若添加第 512 项会引发栈溢出或其他错误，应在库中加入断言或在文档中明确限制。
+- 若 Algopy 已在编译阶段阻止超长数组，应记录该行为并补充说明。
